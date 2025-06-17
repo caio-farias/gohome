@@ -18,7 +18,7 @@
 - Add the following config to your `.bashrc`:
   ```
   _update_ponto_status() {
-          PONTO_OUTPUT=$(~/.pontobin -no-prefix=true)
+          PONTO_OUTPUT=$(~/.pontobin -no-prefix=true -show-final=true)
   }
   PROMPT_COMMAND="_update_ponto_status; $PROMPT_COMMAND"
   PS1='${PONTO_OUTPUT} \[\e[1;32m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ '

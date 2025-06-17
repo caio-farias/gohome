@@ -13,14 +13,14 @@ import (
 
 var (
 	pontoFilePathEnv = os.Getenv("PONTO_FILE_PATH")
-	// showExitHour     = os.Getenv("PONTO_SHOW_EXITH")
-	pontoLogPathEnv = os.Getenv("PONTO_LOG_PATH")
-	logger          *log.Logger
-	prefixColorMap  = map[string]string{
+	pontoLogPathEnv  = os.Getenv("PONTO_LOG_PATH")
+	logger           *log.Logger
+	prefixColorMap   = map[string]string{
 		"r-": "38;5;208",
 		"w-": "32",
 	}
-	isNoPrefix *bool
+	isNoPrefix       *bool
+	isShowFinalPonto *bool
 )
 
 const (
@@ -34,6 +34,8 @@ const (
 
 func main() {
 	isNoPrefix = flag.Bool("no-prefix", true, "enable prefix mod")
+	isShowFinalPonto = flag.Bool("show-final", false, "show final ponto expected")
+
 	flag.Parse()
 
 	setupLogger()
@@ -87,11 +89,12 @@ func main() {
 	hours := outputMinutes / 60
 	minutes := outputMinutes % 60
 
-	// if showExitHour == "true" {
-	// 	currentStatusMsg = buildExitHourMessage(totalWorkedDuration, targetDuration, currentStatusMsg)
-	// }
+	currentStatusMsg := fmt.Sprintf("%02d:%02d", hours, minutes)
+	if *isShowFinalPonto {
+		currentStatusMsg = buildExitHourMessage(totalWorkedDuration, targetDuration, currentStatusMsg)
+	}
 
-	fmt.Println(formatBashOutput(fmt.Sprintf("%02d:%02d", hours, minutes), prefix))
+	fmt.Println(formatBashOutput(currentStatusMsg, prefix))
 }
 
 func formatBashOutput(output string, prefix string) string {
