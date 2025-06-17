@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -12,9 +13,14 @@ import (
 
 var (
 	pontoFilePathEnv = os.Getenv("PONTO_FILE_PATH")
-	showExitHour     = os.Getenv("PONTO_SHOW_EXITH")
-	pontoLogPathEnv  = os.Getenv("PONTO_LOG_PATH")
-	logger           *log.Logger
+	// showExitHour     = os.Getenv("PONTO_SHOW_EXITH")
+	pontoLogPathEnv = os.Getenv("PONTO_LOG_PATH")
+	logger          *log.Logger
+	prefixColorMap  = map[string]string{
+		"r-": "38;5;208",
+		"w-": "32",
+	}
+	isNoPrefix *bool
 )
 
 const (
@@ -27,6 +33,9 @@ const (
 )
 
 func main() {
+	isNoPrefix = flag.Bool("no-prefix", true, "enable prefix mod")
+	flag.Parse()
+
 	setupLogger()
 
 	var pontoFileName string
@@ -64,7 +73,7 @@ func main() {
 	targetDuration := time.Duration(targetHours) * time.Hour
 
 	var outputMinutes int
-	var prefix, currentStatusMsg string
+	var prefix string
 
 	if totalWorkedDuration >= targetDuration {
 		outputMinutes = int(totalWorkedDuration.Minutes())
@@ -77,13 +86,22 @@ func main() {
 
 	hours := outputMinutes / 60
 	minutes := outputMinutes % 60
-	currentStatusMsg = fmt.Sprintf("%s%02d:%02d", prefix, hours, minutes)
-	fmt.Println(showExitHour)
-	if showExitHour == "true" {
-		currentStatusMsg = buildExitHourMessage(totalWorkedDuration, targetDuration, currentStatusMsg)
-	}
 
-	fmt.Println(currentStatusMsg)
+	// if showExitHour == "true" {
+	// 	currentStatusMsg = buildExitHourMessage(totalWorkedDuration, targetDuration, currentStatusMsg)
+	// }
+
+	fmt.Println(formatBashOutput(fmt.Sprintf("%02d:%02d", hours, minutes), prefix))
+}
+
+func formatBashOutput(output string, prefix string) string {
+	color := prefixColorMap[prefix]
+	fontWeight := "22"
+	var appendPrefix string
+	if !*isNoPrefix {
+		appendPrefix = prefix
+	}
+	return fmt.Sprintf("\x1b[%s;%sm%s%s\x1b[0m", fontWeight, color, appendPrefix, output)
 }
 
 func setupLogger() {
@@ -144,21 +162,19 @@ func parseTime(baseDate time.Time, timeStr string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to parse time '%s': %w", timeStr, err)
 	}
-	return time.Date(
-		baseDate.Year(),
-		baseDate.Month(),
-		baseDate.Day(),
-		parsedTime.Hour(),
-		parsedTime.Minute(),
-		0,
-		0,
-		baseDate.Location(),
+	return time.Date(baseDate.Year(), baseDate.Month(), baseDate.Day(),
+		parsedTime.Hour(), parsedTime.Minute(), 0, 0, baseDate.Location(),
 	), nil
 }
 
 func calcTotalHoursWorked(scanner *bufio.Scanner) time.Duration {
 	totalWorkedDuration := time.Duration(0)
 	now := time.Now()
+	now = time.Date(
+		now.Year(), now.Month(), now.Day(),
+		now.Hour(), now.Minute(), 0, 0,
+		now.Location(),
+	)
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
